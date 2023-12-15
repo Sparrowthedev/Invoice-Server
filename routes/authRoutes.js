@@ -19,7 +19,7 @@ router.get('/myaccount', protectedRoute, getMyAccount)
 
 router.post('/forgotPassword', forgotPassword)
 
-router.get('/resetpassword/:vendor_id/:token', getVendorPasswordResetRoute)
+// router.get('/resetpassword/:vendor_id/:token', getVendorPasswordResetRoute)
 
 router.patch('/resetpassword/:vendor_id/:token', updateVendorPassword)
 

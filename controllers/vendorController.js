@@ -6,13 +6,24 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 require('dotenv').config()
+const fs = require('fs');
+const path = require('path');
 const {authenticateVendor} = require('../middlewares/authenticateVendor')
+
+
 
 // generating a token for every authenticated vendor
 const createToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d'
     })
+}
+
+function getResetPasswordTemplate(resetLink) {
+    const filePath = path.join(__dirname, 'passwordResetTemplate.html');
+    let html = fs.readFileSync(filePath, { encoding: 'utf-8' });
+    html = html.replace('{{resetLink}}', resetLink);
+    return html;
 }
 
 // Register a vendor
@@ -193,12 +204,13 @@ const forgotPassword = async (req, res) => {
       });
 
     //   https://stackoverflow.com/questions/59188483/error-invalid-login-535-5-7-8-username-and-password-not-accepted
-      
+    const htmlTemplate = getResetPasswordTemplate(link);
+
       const mailOptions = {
         from: "noreply@gmail.com",
         to: vendor.email,
         subject: 'Sending Email From e-invoice app',
-        html: `<a href = ${link} style="text-decoration: none; padding:5px 10px; background-color: green; border-radius: 5px; color: white;">Click to reset your password</a>`,
+        html: htmlTemplate,
       };
       
       transporter.sendMail(mailOptions, (error, info)=>{
@@ -215,25 +227,25 @@ const forgotPassword = async (req, res) => {
 
 
 // Vendor password reset get route
-const getVendorPasswordResetRoute = async (req, res) => {
-    const { vendor_id, token } = req.params;
-    const vendor = await Vendor.findOne({_id : req.params.vendor_id})
+// const getVendorPasswordResetRoute = async (req, res) => {
+//     const { vendor_id, token } = req.params;
+//     const vendor = await Vendor.findOne({_id : req.params.vendor_id})
 
-    // check if the studentID exists
-    if(vendor_id !== vendor._id.toString()) return res.status(404).send({msg:`Vendor with id ${vendor_id} doesn't exist`})
+//     // check if the studentID exists
+//     if(vendor_id !== vendor._id.toString()) return res.status(404).send({msg:`Vendor with id ${vendor_id} doesn't exist`})
 
-    // verify the token since we have a valid id and a valid user with the id
-    // we would use process.env.JWT_SECRET + student.password to verify the token cos that is what i used in signing the token up
-    const secret = process.env.JWT_SECRET + vendor.password
-    try {
-        const payload = jwt.verify(token, secret)
-        return res.status(200).json({vendor})
+//     // verify the token since we have a valid id and a valid user with the id
+//     // we would use process.env.JWT_SECRET + student.password to verify the token cos that is what i used in signing the token up
+//     const secret = process.env.JWT_SECRET + vendor.password
+//     try {
+//         const payload = jwt.verify(token, secret)
+//         return res.status(200).json({vendor})
         
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({msg: error.message})
-    }
-}
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).json({msg: error.message})
+//     }
+// }
 
 
 
@@ -241,7 +253,6 @@ const getVendorPasswordResetRoute = async (req, res) => {
 const updateVendorPassword = async (req, res) => {
     const { vendor_id, token } = req.params;
     const vendor = await Vendor.findOne({_id : req.params.vendor_id})
-    // console.log(vendor)
 
     // check if the vendor_id exists
     if(vendor_id !== vendor._id.toString()) return res.status(404).send({msg:`Vendor with id ${vendor._id} doesn't exist`})
@@ -255,8 +266,9 @@ const updateVendorPassword = async (req, res) => {
         const payload = jwt.verify(token, secret)
 
         const salt = await bcrypt.genSalt(10);
+
         vendor.password = await bcrypt.hash(req.body.password, salt)
-        console.log(vendor.password)
+
         const vendorAccountToUpdate = await Vendor.findOneAndUpdate({_id: vendor_id}, {...req.body, password:vendor.password}, {new: true})
         return res.status(200).json({vendorAccountToUpdate})
     } catch (error) {
