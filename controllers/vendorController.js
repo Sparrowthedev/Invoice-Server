@@ -25,6 +25,12 @@ function getResetPasswordTemplate(resetLink) {
     html = html.replace('{{resetLink}}', resetLink);
     return html;
 }
+function getSuccessTemplate(link) {
+    const filePath = path.join(__dirname, 'success.html');
+    let html = fs.readFileSync(filePath, { encoding: 'utf-8' });
+    html = html.replace('{{resetLink}}', link);
+    return html;
+}
 
 // Register a vendor
 const registerVendor = async (req, res) => {
@@ -215,10 +221,10 @@ const forgotPassword = async (req, res) => {
       
       transporter.sendMail(mailOptions, (error, info)=>{
         if (error) {
-          console.log(error + "Error here");
+            res.status(400).json({err: error.message})
         } else {
-          console.log('Email sent: ' + info.response);
-          console.log(info)
+          console.log('Email sent');
+        //   console.log(info)
         }
       });
 
@@ -270,6 +276,38 @@ const updateVendorPassword = async (req, res) => {
         vendor.password = await bcrypt.hash(req.body.password, salt)
 
         const vendorAccountToUpdate = await Vendor.findOneAndUpdate({_id: vendor_id}, {...req.body, password:vendor.password}, {new: true})
+
+        const link = `https://invoice-app-nine-ashen.vercel.app/login`;
+
+        if(vendorAccountToUpdate){
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.GMAIL,
+                    pass: process.env.INVOICE_APP_PASSWORD,
+                }
+              });
+        
+            //   https://stackoverflow.com/questions/59188483/error-invalid-login-535-5-7-8-username-and-password-not-accepted
+            const htmlTemplate = getSuccessTemplate(link);
+        
+              const mailOptions = {
+                from: "noreply@gmail.com",
+                to: vendor.email,
+                subject: 'Sending Email From e-invoice app',
+                html: htmlTemplate,
+              };
+              
+              transporter.sendMail(mailOptions, (error, info)=>{
+                if (error) {
+                    res.status(400).json({err: error.message})
+                } else {
+                  console.log('Email sent');
+                //   console.log(info)
+                }
+              });
+        
+        }
         return res.status(200).json({vendorAccountToUpdate})
     } catch (error) {
         console.log(error)
