@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { protectedRoute } = require('../middlewares/authMiddleWare')
 const {registerVendor, loginVendor, updateVendorAccount, 
-        forgotPassword, deleteVendorAccount, getVendorPasswordResetRoute, 
+        forgotPassword, deleteVendorAccount, 
         updateVendorPassword, getMyAccount} = require('../controllers/vendorController')
 
 router.post('/register', registerVendor)

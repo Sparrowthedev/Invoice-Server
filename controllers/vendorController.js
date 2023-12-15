@@ -287,6 +287,5 @@ module.exports = {
     updateVendorAccount,
     deleteVendorAccount,
     forgotPassword,
-    getVendorPasswordResetRoute,
     updateVendorPassword
 }
