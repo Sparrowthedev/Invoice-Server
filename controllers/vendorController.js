@@ -34,8 +34,9 @@ function getSuccessTemplate(link) {
 
 // Register a vendor
 const registerVendor = async (req, res) => {
+    const email = req.body.email.toLowerCase()
 
-    const {fName, lName, email, password, businessName, businessType, businessOwnersName, 
+    const {fName, lName, password, businessName, businessType, businessOwnersName, 
             businessWesite, profilePic, country, city, streetAddress, businessContact, postalCode } = req.body
 
     try {
@@ -52,7 +53,7 @@ const registerVendor = async (req, res) => {
                 if(vendorEmail) return res.status(400).json({err:"Vendor with this email already exists"})
 
                 // creating the vendor
-                const vendor = new Vendor({...req.body})
+                const vendor = new Vendor({...req.body, email: email})
 
                 // Hashing the vendors password using the bycrypt library
                 const salt = await bcrypt.genSalt(10)
@@ -75,8 +76,8 @@ const registerVendor = async (req, res) => {
 
 // Login a vendor
 const loginVendor = async (req, res) => {
-    const { email, password } = req.body
-
+    const { password } = req.body
+    const email = req.body.email.toLowerCase()
     try {
         // checking if vendor exists or not
         const vendor = await Vendor.findOne({email})
